@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow — Gerenciador de Tarefas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --green: #34d399;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+    h1, h2, .mono { font-family: 'Space Mono', monospace; }
+
+    /* ── Glassmorphism ── */
+    .glass {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 1rem;
+    }
+
+    /* ── Inputs ── */
+    .field {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: .5rem;
+      color: #e2e8f0;
+      padding: .65rem 1rem;
+      width: 100%;
+      outline: none;
+      transition: border-color .2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .field:focus { border-color: var(--accent); }
+    .field option { background: #1e293b; }
+
+    /* ── Botões ── */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0f172a;
+      font-weight: 700;
+      border-radius: .5rem;
+      padding: .7rem 1.5rem;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+      border: none;
+      width: 100%;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: .02em;
+    }
+    .btn-primary:hover { opacity: .88; transform: translateY(-1px); }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: #94a3b8;
+      border-radius: .5rem;
+      padding: .55rem 1.2rem;
+      cursor: pointer;
+      transition: border-color .2s, color .2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Badge de tipo ── */
+    .badge {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      padding: .2rem .6rem;
+      border-radius: 9999px;
+      font-family: 'Space Mono', monospace;
+    }
+    .badge-trabalho { background: rgba(56,189,248,.15); color: #38bdf8; }
+    .badge-pessoal  { background: rgba(129,140,248,.15); color: #818cf8; }
+    .badge-estudos  { background: rgba(52,211,153,.15);  color: #34d399; }
+
+    /* ── Card de tarefa ── */
+    .task-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: .75rem;
+      padding: 1rem 1.2rem;
+      transition: border-color .2s;
+    }
+    .task-card:hover { border-color: rgba(255,255,255,.15); }
+    .task-card.done { opacity: .45; }
+    .task-card.done .task-title { text-decoration: line-through; color: #64748b; }
+
+    /* ── Mensagem de erro ── */
+    .erro { color: #f87171; font-size: .83rem; margin-top: .3rem; min-height: 1.2rem; }
+
+    /* ── Animação de entrada ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp .4s ease both; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 9px; }
+
+    /* ── Fundo decorativo ── */
+    .bg-glow {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 10%, rgba(56,189,248,.07) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 35% at 80% 90%, rgba(129,140,248,.07) 0%, transparent 70%);
+    }
+  </style>
+</head>
+<body class="text-slate-200">
+
+  <div class="bg-glow"></div>
+
+  <!-- ══════════════════════════════════════
+       TELA DE LOGIN
+  ══════════════════════════════════════ -->
+  <div id="tela-login" class="relative z-10 min-h-screen flex items-center justify-center px-4">
+    <div class="glass fade-up p-8 w-full max-w-sm">
+      <p class="mono text-xs text-sky-400 tracking-widest mb-1">TASKFLOW</p>
+      <h1 class="text-2xl font-bold mb-6 text-white">Entrar</h1>
+
+      <label class="block text-xs text-slate-400 mb-1 uppercase tracking-wider">E-mail</label>
+      <input id="login-email" type="email" class="field mb-3" placeholder="seu@email.com" />
+
+      <label class="block text-xs text-slate-400 mb-1 uppercase tracking-wider">Senha</label>
+      <input id="login-senha" type="password" class="field mb-1" placeholder="••••••••" />
+      <p id="login-erro" class="erro"></p>
+
+      <button class="btn-primary mt-4" onclick="fazerLogin()">ENTRAR</button>
+
+      <p class="text-center text-slate-500 text-sm mt-5">
+        Não tem conta?
+        <a href="#" class="text-sky-400 hover:underline" onclick="mostrarTela('tela-cadastro')">Cadastre-se</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TELA DE CADASTRO
+  ══════════════════════════════════════ -->
+  <div id="tela-cadastro" class="relative z-10 min-h-screen hidden items-center justify-center px-4">
+    <div class="glass fade-up p-8 w-full max-w-sm">
+      <p class="mono text-xs text-sky-400 tracking-widest mb-1">TASKFLOW</p>
+      <h1 class="text-2xl font-bold mb-6 text-white">Criar conta</h1>
+
+      <label class="block text-xs text-slate-400 mb-1 uppercase tracking-wider">Nome</label>
+      <input id="cad-nome" type="text" class="field mb-3" placeholder="Seu nome" />
+
+      <label class="block text-xs text-slate-400 mb-1 uppercase tracking-wider">E-mail</label>
+      <input id="cad-email" type="email" class="field mb-3" placeholder="seu@email.com" />
+
+      <label class="block text-xs text-slate-400 mb-1 uppercase tracking-wider">Senha</label>
+      <input id="cad-senha" type="password" class="field mb-1" placeholder="••••••••" />
+      <p id="cad-erro" class="erro"></p>
+
+      <button class="btn-primary mt-4" onclick="fazerCadastro()">CRIAR CONTA</button>
+
+      <p class="text-center text-slate-500 text-sm mt-5">
+        Já tem conta?
+        <a href="#" class="text-sky-400 hover:underline" onclick="mostrarTela('tela-login')">Entrar</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAINEL PRINCIPAL (DASHBOARD)
+  ══════════════════════════════════════ -->
+  <div id="tela-painel" class="relative z-10 hidden min-h-screen">
+
+    <!-- Header -->
+    <header class="glass mx-4 mt-4 px-6 py-4 flex items-center justify-between">
+      <div>
+        <p class="mono text-xs text-sky-400 tracking-widest">TASKFLOW</p>
+        <p class="text-white font-semibold mt-0.5">Olá, <span id="usuario-nome" class="text-sky-300"></span> 👋</p>
+      </div>
+      <button class="btn-outline text-sm" onclick="fazerLogout()">Sair</button>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-4 mt-8 pb-16">
+
+      <!-- Formulário de nova tarefa -->
+      <div class="glass p-6 mb-8">
+        <h2 class="text-base font-semibold text-white mb-4">Nova Tarefa</h2>
+
+        <label class="block text-xs text-slate-400 mb-1 uppercase tracking-wider">Título *</label>
+        <input id="task-titulo" type="text" class="field mb-3" placeholder="O que precisa ser feito?" />
+
+        <label class="block text-xs text-slate-400 mb-1 uppercase tracking-wider">Tipo</label>
+        <select id="task-tipo" class="field mb-3">
+          <option value="trabalho">💼 Trabalho</option>
+          <option value="pessoal">🎯 Pessoal</option>
+          <option value="estudos">📚 Estudos</option>
+        </select>
+
+        <label class="block text-xs text-slate-400 mb-1 uppercase tracking-wider">Descrição</label>
+        <textarea id="task-descricao" class="field mb-1" rows="2" placeholder="Detalhes opcionais..."></textarea>
+        <p id="task-erro" class="erro"></p>
+
+        <button class="btn-primary mt-3" onclick="adicionarTarefa()">+ ADICIONAR TAREFA</button>
+      </div>
+
+      <!-- Lista de tarefas -->
+      <h2 class="mono text-xs text-slate-500 tracking-widest mb-4 px-1">MINHAS TAREFAS</h2>
+      <div id="lista-tarefas" class="space-y-3"></div>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
