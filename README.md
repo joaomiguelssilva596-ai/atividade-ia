@@ -33,3 +33,4 @@ jogo-atari/
 ├── requirements.txt  # Dependência: pygame
 └── README.md         # Este arquivo
 ```
+## Atividade Concluída
